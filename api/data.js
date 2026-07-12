@@ -1,17 +1,14 @@
-// api/data.js — Visiblo Dashboard
-// Endpoint appelé par le dashboard pour récupérer les données
-
 import { Redis } from '@upstash/redis';
-import clients from '../data/clients.json' assert { type: 'json' };
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const clients = require('../data/clients.json');
 
 const redis = Redis.fromEnv();
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-
   const { client_id } = req.query;
 
-  // ─── Liste de tous les clients (sidebar) ─────────────────────────────────
   if (!client_id) {
     const liste = await Promise.all(
       clients.map(async (c) => {
@@ -31,7 +28,6 @@ export default async function handler(req, res) {
     return res.status(200).json(liste);
   }
 
-  // ─── Détail d'un client ───────────────────────────────────────────────────
   const client = clients.find((c) => c.id === client_id);
   if (!client) return res.status(404).json({ error: 'Client introuvable' });
 
