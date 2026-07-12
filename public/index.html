@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visiblo — Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --teal: #2BBFA4;
+      --teal-dark: #1A8C75;
+      --navy: #0E1E2C;
+      --bg: #F5F5F3;
+      --surface: #FFFFFF;
+      --border: #E5E5E3;
+      --text: #0E1E2C;
+      --text-2: #4A5568;
+      --text-3: #9CA3AF;
+      --success: #10B981;
+      --success-bg: #ECFDF5;
+      --warning: #F59E0B;
+      --warning-bg: #FFFBEB;
+      --danger: #EF4444;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    /* ── Nav ── */
+    .nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      height: 52px;
+      background: var(--navy);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .nav-brand {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 16px; font-weight: 600; color: #fff; letter-spacing: -0.3px;
+    }
+    .nav-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--teal); }
+    .nav-right { font-size: 12px; color: rgba(255,255,255,0.4); }
+    .sync-indicator { display: inline-flex; align-items: center; gap: 5px; }
+    .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--teal); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+
+    /* ── Layout ── */
+    .layout {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      min-height: 100vh;
+      padding-top: 52px;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 16px 0;
+      position: sticky; top: 52px; height: calc(100vh - 52px);
+      overflow-y: auto;
+    }
+    .sidebar-section { padding: 0 12px; margin-bottom: 4px; margin-top: 20px; }
+    .sidebar-section:first-child { margin-top: 0; }
+    .sidebar-label {
+      font-size: 10px; font-weight: 600; color: var(--text-3);
+      text-transform: uppercase; letter-spacing: 0.1em;
+      padding: 0 4px; margin-bottom: 6px;
+    }
+    .client-btn {
+      width: 100%; background: none; border: none; cursor: pointer;
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 8px; border-radius: 8px;
+      transition: background 0.1s; text-align: left;
+    }
+    .client-btn:hover { background: var(--bg); }
+    .client-btn.active { background: #EEF9F7; }
+    .client-btn.active .client-name { color: var(--teal-dark); }
+    .avatar {
+      width: 32px; height: 32px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 600; flex-shrink: 0;
+    }
+    .client-info { flex: 1; min-width: 0; }
+    .client-name { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .client-sub { font-size: 11px; color: var(--text-3); margin-top: 1px; }
+    .note-pill {
+      font-size: 12px; font-weight: 600; padding: 2px 7px;
+      border-radius: 20px; flex-shrink: 0;
+    }
+    .note-good { background: var(--success-bg); color: var(--success); }
+    .note-warn { background: var(--warning-bg); color: var(--warning); }
+    .note-neutral { background: var(--bg); color: var(--text-2); }
+
+    /* ── Main ── */
+    .main { padding: 24px; }
+
+    /* ── Page header ── */
+    .page-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .page-title { font-size: 20px; font-weight: 600; letter-spacing: -0.3px; }
+    .page-sub { font-size: 13px; color: var(--text-2); margin-top: 2px; }
+    .badges-header { display: flex; gap: 8px; flex-wrap: wrap; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 12px; font-weight: 500; padding: 4px 10px;
+      border-radius: 20px; border: 1px solid var(--border);
+    }
+    .badge-active { background: var(--success-bg); color: var(--success); border-color: #A7F3D0; }
+    .badge-plan { background: #EEF9F7; color: var(--teal-dark); border-color: #A7E9E0; }
+
+    /* ── KPI cards ── */
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+    .kpi {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px;
+    }
+    .kpi-label { font-size: 12px; color: var(--text-2); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+    .kpi-icon { font-size: 14px; }
+    .kpi-value { font-size: 26px; font-weight: 600; letter-spacing: -0.5px; color: var(--text); }
+    .kpi-delta { font-size: 12px; color: var(--text-3); margin-top: 4px; }
+    .delta-up { color: var(--success); }
+    .delta-warn { color: var(--warning); }
+
+    /* ── Grille contenu ── */
+    .content-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 18px;
+    }
+    .card-title {
+      font-size: 11px; font-weight: 600; color: var(--text-3);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      margin-bottom: 14px;
+    }
+
+    /* ── Table badges ── */
+    .btable { width: 100%; border-collapse: collapse; }
+    .btable th {
+      font-size: 11px; color: var(--text-3); font-weight: 500;
+      text-align: left; padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .btable th:not(:first-child) { text-align: right; }
+    .btable td {
+      padding: 10px 0; font-size: 13px; color: var(--text);
+      border-bottom: 1px solid var(--border); vertical-align: middle;
+    }
+    .btable td:not(:first-child) { text-align: right; color: var(--text-2); }
+    .btable tr:last-child td { border-bottom: none; }
+    .source-name { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+    .src-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .conv-tag {
+      display: inline-block; font-size: 11px; font-weight: 600;
+      padding: 2px 8px; border-radius: 20px;
+    }
+    .conv-high { background: var(--success-bg); color: var(--success); }
+    .conv-mid { background: var(--warning-bg); color: var(--warning); }
+    .conv-low { background: #FEF2F2; color: var(--danger); }
+
+    /* ── Alertes ── */
+    .alerte {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+    }
+    .alerte:last-child { border-bottom: none; }
+    .alerte-icon {
+      width: 30px; height: 30px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; flex-shrink: 0;
+    }
+    .icon-avis { background: var(--success-bg); }
+    .icon-clic { background: #EEF9F7; }
+    .alerte-text { font-size: 13px; color: var(--text); line-height: 1.4; }
+    .alerte-time { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+
+    /* ── Progression note ── */
+    .prog-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .prog-label { font-size: 12px; color: var(--text-2); width: 90px; flex-shrink: 0; }
+    .prog-track { flex: 1; height: 6px; background: var(--bg); border-radius: 3px; overflow: hidden; }
+    .prog-fill { height: 100%; border-radius: 3px; background: var(--teal); transition: width 0.6s ease; }
+    .prog-pct { font-size: 12px; color: var(--text-3); width: 36px; text-align: right; flex-shrink: 0; }
+
+    /* ── Chart ── */
+    .chart-wrap { position: relative; height: 160px; margin-top: 4px; }
+
+    /* ── États vides / chargement ── */
+    .loading {
+      display: flex; align-items: center; justify-content: center;
+      padding: 60px 20px; color: var(--text-3); font-size: 13px; gap: 8px;
+    }
+    .spinner {
+      width: 16px; height: 16px; border: 2px solid var(--border);
+      border-top-color: var(--teal); border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .empty {
+      padding: 40px 20px; text-align: center; color: var(--text-3); font-size: 13px;
+    }
+    .empty-icon { font-size: 28px; margin-bottom: 8px; }
+
+    /* ── Toast notification ── */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--navy); color: #fff;
+      padding: 12px 16px; border-radius: 10px;
+      font-size: 13px; font-weight: 500;
+      display: flex; align-items: center; gap: 8px;
+      transform: translateY(80px); opacity: 0;
+      transition: all 0.3s ease; z-index: 200;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--teal); }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-brand">
+    <div class="nav-dot"></div>
+    Visiblo
+  </div>
+  <div class="nav-right">
+    <span class="sync-indicator">
+      <span class="sync-dot"></span>
+      <span id="lastSync">Synchronisation en cours…</span>
+    </span>
+  </div>
+</nav>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Mes clients</div>
+      <div id="clientList"><div class="loading"><div class="spinner"></div> Chargement…</div></div>
+    </div>
+  </aside>
+
+  <main class="main" id="mainPanel">
+    <div class="empty">
+      <div class="empty-icon">📊</div>
+      Sélectionne un client pour voir ses données
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast">
+  <div class="toast-dot"></div>
+  <span id="toastMsg"></span>
+</div>
+
+<script>
+// ─── Config ──────────────────────────────────────────────────────────────────
+// En prod : remplace par ton URL Vercel, ex: 'https://visiblo-dashboard.vercel.app'
+const API_BASE = window.location.hostname === 'localhost'
+  ? 'http://localhost:3000'
+  : '';
+
+let currentClientId = null;
+let noteChart = null;
+let refreshTimer = null;
+
+// ─── Utils ───────────────────────────────────────────────────────────────────
+function notePillClass(note) {
+  if (!note) return 'note-neutral';
+  if (note >= 4.2) return 'note-good';
+  if (note >= 3.8) return 'note-warn';
+  return 'note-neutral';
+}
+
+function convClass(pct) {
+  const n = parseInt(pct);
+  if (n >= 35) return 'conv-high';
+  if (n >= 20) return 'conv-mid';
+  return 'conv-low';
+}
+
+function srcColor(type) {
+  return type === 'badge' ? '#2BBFA4' : '#94A3B8';
+}
+
+function timeAgo(isoString) {
+  if (!isoString) return '—';
+  const diff = Math.floor((Date.now() - new Date(isoString)) / 1000);
+  if (diff < 60) return `Il y a ${diff}s`;
+  if (diff < 3600) return `Il y a ${Math.floor(diff/60)}min`;
+  if (diff < 86400) return `Il y a ${Math.floor(diff/3600)}h`;
+  return `Il y a ${Math.floor(diff/86400)}j`;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+function noteClass(note) {
+  if (!note) return '';
+  if (note >= 4.2) return 'delta-up';
+  if (note >= 3.8) return 'delta-warn';
+  return '';
+}
+
+// ─── Sidebar : liste clients ──────────────────────────────────────────────────
+async function loadClientList() {
+  try {
+    const res = await fetch(`${API_BASE}/api/data`);
+    const clients = await res.json();
+
+    if (!clients.length) {
+      document.getElementById('clientList').innerHTML =
+        '<div class="empty" style="padding:20px 8px;">Aucun client encore.<br>Ajoute-en un dans clients.json</div>';
+      return;
+    }
+
+    document.getElementById('clientList').innerHTML = clients.map(c => {
+      const initiales = c.nom.split(/[\s—-]/)[0].substring(0,2).toUpperCase();
+      const noteText = c.note ? `${c.note}★` : '—';
+      return `
+      <button class="client-btn" id="btn-${c.id}" onclick="loadClient('${c.id}')">
+        <div class="avatar" style="background:#EEF9F7;color:var(--teal-dark);">${initiales}</div>
+        <div class="client-info">
+          <div class="client-name">${c.nom.replace(/Exemple — /, '')}</div>
+          <div class="client-sub">${c.type} · Plan ${c.plan}</div>
+        </div>
+        <span class="note-pill ${notePillClass(c.note)}">${noteText}</span>
+      </button>`;
+    }).join('');
+
+    // Auto-sélectionne le premier client
+    if (clients.length && !currentClientId) loadClient(clients[0].id);
+
+  } catch {
+    document.getElementById('clientList').innerHTML =
+      '<div class="empty" style="padding:20px 8px;color:#EF4444;">Impossible de charger<br>les clients</div>';
+  }
+}
+
+// ─── Main panel : détail client ───────────────────────────────────────────────
+async function loadClient(clientId) {
+  currentClientId = clientId;
+
+  // Highlight sidebar
+  document.querySelectorAll('.client-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById(`btn-${clientId}`);
+  if (btn) btn.classList.add('active');
+
+  // Loader
+  document.getElementById('mainPanel').innerHTML =
+    '<div class="loading"><div class="spinner"></div> Chargement des données…</div>';
+
+  try {
+    const res = await fetch(`${API_BASE}/api/data?client_id=${clientId}`);
+    if (!res.ok) throw new Error('Erreur API');
+    const d = await res.json();
+    renderClient(d);
+  } catch {
+    document.getElementById('mainPanel').innerHTML =
+      '<div class="empty"><div class="empty-icon">⚠️</div>Impossible de charger ce client.<br>Vérifie que l\'API est en ligne.</div>';
+  }
+}
+
+// ─── Rendu principal ──────────────────────────────────────────────────────────
+function renderClient(d) {
+  const { meta, google, bitly, taux_conversion, historique, alertes, derniere_sync } = d;
+
+  const noteGain = google.note && meta.note_depart
+    ? `+${(google.note - meta.note_depart).toFixed(1)} depuis le départ`
+    : '';
+
+  // Progression par palier
+  const paliers = genPaliers(meta.note_depart, google.note);
+
+  // Liens Bitly avec taux de conversion
+  const totalAvis = google.nb_avis ?? 0;
+  const liensHTML = Object.entries(bitly.par_lien ?? {}).map(([id, l]) => {
+    const conv = l.clics_30j > 0 ? Math.round((totalAvis / bitly.total_clics_30j) * 100) : 0;
+    const cls = convClass(conv);
+    return `
+    <tr>
+      <td>
+        <div class="source-name">
+          <div class="src-dot" style="background:${srcColor(l.type)}"></div>
+          ${l.nom}
+        </div>
+      </td>
+      <td>${l.clics_30j}</td>
+      <td><span class="conv-tag ${cls}">${conv}%</span></td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="3" style="color:var(--text-3);font-size:12px;padding:12px 0;">Aucun lien Bitly configuré</td></tr>`;
+
+  // Alertes
+  const alertesHTML = (alertes?.length ? alertes : []).map(a => `
+    <div class="alerte">
+      <div class="alerte-icon icon-avis">⭐</div>
+      <div>
+        <div class="alerte-text">${a.message} (${a.nb_avis_avant} → ${a.nb_avis_apres} avis)</div>
+        <div class="alerte-time">${timeAgo(a.t)}</div>
+      </div>
+    </div>`).join('') || '<div class="empty" style="padding:16px 0;">Aucune alerte pour l\'instant</div>';
+
+  document.getElementById('mainPanel').innerHTML = `
+    <div class="page-header">
+      <div>
+        <div class="page-title">${meta.nom.replace(/Exemple — /, '')}</div>
+        <div class="page-sub">${meta.adresse}</div>
+      </div>
+      <div class="badges-header">
+        <span class="badge badge-active">● Actif</span>
+        <span class="badge badge-plan">Plan ${meta.plan}</span>
+      </div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi">
+        <div class="kpi-label"><span class="kpi-icon">⭐</span> Note Google</div>
+        <div class="kpi-value ${noteClass(google.note)}">${google.note ?? '—'}</div>
+        <div class="kpi-delta ${noteGain ? 'delta-up' : ''}">${noteGain || `Départ : ${meta.note_depart}★`}</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label"><span class="kpi-icon">💬</span> Avis totaux</div>
+        <div class="kpi-value">${google.nb_avis ?? '—'}</div>
+        <div class="kpi-delta">Google My Business</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label"><span class="kpi-icon">🔗</span> Clics 30 jours</div>
+        <div class="kpi-value">${bitly.total_clics_30j ?? '—'}</div>
+        <div class="kpi-delta">Toutes sources confondues</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label"><span class="kpi-icon">📊</span> Taux conversion</div>
+        <div class="kpi-value">${taux_conversion ?? '—'}%</div>
+        <div class="kpi-delta">Clics → avis déposés</div>
+      </div>
+    </div>
+
+    <div class="content-grid">
+      <div class="card">
+        <div class="card-title">Sources & badges</div>
+        <table class="btable">
+          <thead><tr><th>Source</th><th>Clics</th><th>Conv.</th></tr></thead>
+          <tbody>${liensHTML}</tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Alertes avis</div>
+        ${alertesHTML}
+      </div>
+    </div>
+
+    <div class="content-grid">
+      <div class="card">
+        <div class="card-title">Progression de la note</div>
+        ${paliers.map(p => `
+        <div class="prog-row">
+          <div class="prog-label">${p.label}</div>
+          <div class="prog-track"><div class="prog-fill" style="width:${p.pct}%"></div></div>
+          <div class="prog-pct">${p.pct}%</div>
+        </div>`).join('')}
+      </div>
+
+      <div class="card">
+        <div class="card-title">Évolution de la note (7 jours)</div>
+        <div class="chart-wrap">
+          <canvas id="noteChart" role="img" aria-label="Courbe d'évolution de la note Google sur 7 jours"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div style="font-size:11px;color:var(--text-3);margin-top:8px;text-align:right;">
+      Dernière sync : ${timeAgo(derniere_sync)} · Rafraîchissement automatique toutes les heures
+    </div>
+  `;
+
+  // Chart
+  renderChart(historique ?? []);
+
+  // Sync indicator
+  document.getElementById('lastSync').textContent = `Sync ${timeAgo(derniere_sync)}`;
+}
+
+// ─── Graphique note ───────────────────────────────────────────────────────────
+function renderChart(historique) {
+  if (noteChart) { noteChart.destroy(); noteChart = null; }
+  const ctx = document.getElementById('noteChart');
+  if (!ctx) return;
+
+  const labels = historique.map(p => {
+    const d = new Date(p.t);
+    return `${d.getDate()}/${d.getMonth()+1} ${String(d.getHours()).padStart(2,'0')}h`;
+  });
+  const values = historique.map(p => p.note);
+
+  noteChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Note Google',
+        data: values,
+        borderColor: '#2BBFA4',
+        borderWidth: 2,
+        pointRadius: 2,
+        pointBackgroundColor: '#2BBFA4',
+        fill: true,
+        backgroundColor: 'rgba(43,191,164,0.08)',
+        tension: 0.4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: {
+          min: 1, max: 5,
+          grid: { color: '#F0F0EE' },
+          ticks: { font: { size: 11 }, color: '#9CA3AF', stepSize: 0.5 }
+        },
+        x: {
+          grid: { display: false },
+          ticks: {
+            font: { size: 10 }, color: '#9CA3AF',
+            maxTicksLimit: 7, maxRotation: 0
+          }
+        }
+      }
+    }
+  });
+}
+
+// ─── Calcul paliers progression ───────────────────────────────────────────────
+function genPaliers(noteDepart, noteCourante) {
+  const paliersCibles = [3.6, 3.8, 4.0, 4.2, 4.5, 4.8, 5.0];
+  const start = noteDepart ?? 3.0;
+  const current = noteCourante ?? start;
+
+  const paliers = [];
+  for (let i = 0; i < paliersCibles.length - 1; i++) {
+    const from = paliersCibles[i];
+    const to = paliersCibles[i + 1];
+    if (from < start) continue;
+    if (paliers.length >= 4) break;
+
+    let pct = 0;
+    if (current >= to) pct = 100;
+    else if (current > from) pct = Math.round(((current - from) / (to - from)) * 100);
+
+    paliers.push({ label: `${from} → ${to}`, pct });
+  }
+  return paliers;
+}
+
+// ─── Init & auto-refresh ──────────────────────────────────────────────────────
+loadClientList();
+
+// Refresh le client affiché toutes les 5 minutes
+setInterval(() => {
+  if (currentClientId) loadClient(currentClientId);
+}, 5 * 60 * 1000);
+
+// Refresh la sidebar toutes les heures
+setInterval(loadClientList, 60 * 60 * 1000);
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+[
+  {
+    "id": "demo-client",
+    "nom": "Exemple — Brasserie du Beffroi",
+    "type": "Restaurant",
+    "adresse": "14 rue de la Paix, Arras",
+    "plan": "Pro",
+    "google_place_id": "COLLER_ICI_LE_PLACE_ID_GOOGLE",
+    "note_depart": 3.6,
+    "date_debut": "2025-01-01",
+    "liens_bitly": [
+      { "id": "beffroi-thomas", "nom": "Thomas D.", "type": "badge" },
+      { "id": "beffroi-amelie", "nom": "Amélie R.", "type": "badge" },
+      { "id": "beffroi-vitrine", "nom": "Plaque vitrine", "type": "plaque" }
+    ]
+  }
+]
