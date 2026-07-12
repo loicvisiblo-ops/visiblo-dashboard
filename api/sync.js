@@ -32,9 +32,11 @@ async function getGoogleNote(placeId) {
 
 export default async function handler(req, res) {
   const authHeader = req.headers.authorization;
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return res.status(401).json({ error: 'Non autorisé' });
-  }
+ const isVercelCron = req.headers['x-vercel-cron'] === '1';
+const isManuell = req.query.secret === process.env.CRON_SECRET;
+if (!isVercelCron && !isManuell) {
+  return res.status(401).json({ error: 'Non autorisé' });
+}
 
   const timestamp = new Date().toISOString();
   const resultats = [];
