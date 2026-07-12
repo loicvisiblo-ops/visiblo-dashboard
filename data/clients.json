@@ -1,17 +1,17 @@
 [
   {
-    "id": "demo-client",
-    "nom": "Exemple — Brasserie du Beffroi",
+    "id": "feu-de-bois-arras",
+    "nom": "Feu de Bois Arras",
     "type": "Restaurant",
-    "adresse": "14 rue de la Paix, Arras",
+    "adresse": "114 Av. Winston Churchill, Arras",
     "plan": "Pro",
-    "google_place_id": "COLLER_ICI_LE_PLACE_ID_GOOGLE",
-    "note_depart": 3.6,
-    "date_debut": "2025-01-01",
+    "google_place_id": "ChIJ2ZMs-m9H3UcRsAIeqCCINvI",
+    "note_depart": 4.5,
+    "date_debut": "2026-07-12",
     "liens_bitly": [
-      { "id": "beffroi-thomas", "nom": "Thomas D.", "type": "badge" },
-      { "id": "beffroi-amelie", "nom": "Amélie R.", "type": "badge" },
-      { "id": "beffroi-vitrine", "nom": "Plaque vitrine", "type": "plaque" }
+      { "id": "serveur-1", "nom": "Serveur 1", "type": "badge" },
+      { "id": "serveur-2", "nom": "Serveur 2", "type": "badge" },
+      { "id": "feubois-vitrine", "nom": "Plaque vitrine", "type": "plaque" }
     ]
   }
 ]
