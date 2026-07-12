@@ -31,12 +31,11 @@ async function getGoogleNote(placeId) {
 }
 
 export default async function handler(req, res) {
-  const authHeader = req.headers.authorization;
- const isVercelCron = req.headers['x-vercel-cron'] === '1';
-const isManuell = req.query.secret === process.env.CRON_SECRET;
-if (!isVercelCron && !isManuell) {
-  return res.status(401).json({ error: 'Non autorisé' });
-}
+  const isVercelCron = req.headers['x-vercel-cron'] === '1';
+  const isManuell = req.query.secret === process.env.CRON_SECRET;
+  if (!isVercelCron && !isManuell) {
+    return res.status(401).json({ error: 'Non autorisé' });
+  }
 
   const timestamp = new Date().toISOString();
   const resultats = [];
@@ -50,28 +49,35 @@ if (!isVercelCron && !isManuell) {
 
     const google = await getGoogleNote(client.google_place_id);
     const totalClics = Object.values(clicsParLien).reduce((s, l) => s + l.clics_30j, 0);
-    const snapshot = { client_id: client.id, timestamp, google: { note: google?.note ?? null, nb_avis: google?.nb_avis ?? 0 }, bitly: { total_clics_30j: totalClics, par_lien: clicsParLien } };
 
-    await redis.set(`snapshot:${client.id}`, JSON.stringify(snapshot));
+    const snapshot = {
+      client_id: client.id, timestamp,
+      google: { note: google?.note ?? null, nb_avis: google?.nb_avis ?? 0 },
+      bitly: { total_clics_30j: totalClics, par_lien: clicsParLien }
+    };
 
-    const historiqueRaw = await redis.get(`historique:${client.id}`);
-    const historique = historiqueRaw ? JSON.parse(historiqueRaw) : [];
+    await redis.set(`snapshot:${client.id}`, snapshot);
+
+    const historique = await redis.get(`historique:${client.id}`) ?? [];
     historique.push({ t: timestamp, note: google?.note, nb_avis: google?.nb_avis });
     if (historique.length > 720) historique.splice(0, historique.length - 720);
-    await redis.set(`historique:${client.id}`, JSON.stringify(historique));
+    await redis.set(`historique:${client.id}`, historique);
 
-    const precedentRaw = await redis.get(`precedent:${client.id}`);
-    const precedent = precedentRaw ? JSON.parse(precedentRaw) : null;
+    const precedent = await redis.get(`precedent:${client.id}`);
     if (precedent && google?.nb_avis > (precedent.nb_avis ?? 0)) {
       const diff = google.nb_avis - precedent.nb_avis;
-      const alertesRaw = await redis.get(`alertes:${client.id}`);
-      const alertes = alertesRaw ? JSON.parse(alertesRaw) : [];
-      alertes.unshift({ t: timestamp, message: `${diff} nouvel${diff > 1 ? 's' : ''} avis détecté${diff > 1 ? 's' : ''}`, nb_avis_avant: precedent.nb_avis, nb_avis_apres: google.nb_avis });
+      const alertes = await redis.get(`alertes:${client.id}`) ?? [];
+      alertes.unshift({
+        t: timestamp,
+        message: `${diff} nouvel${diff > 1 ? 's' : ''} avis détecté${diff > 1 ? 's' : ''}`,
+        nb_avis_avant: precedent.nb_avis,
+        nb_avis_apres: google.nb_avis
+      });
       if (alertes.length > 50) alertes.splice(50);
-      await redis.set(`alertes:${client.id}`, JSON.stringify(alertes));
+      await redis.set(`alertes:${client.id}`, alertes);
     }
 
-    await redis.set(`precedent:${client.id}`, JSON.stringify({ nb_avis: google?.nb_avis, note: google?.note }));
+    await redis.set(`precedent:${client.id}`, { nb_avis: google?.nb_avis, note: google?.note });
     resultats.push({ client: client.id, ok: true });
   }
 
